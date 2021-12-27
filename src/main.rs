@@ -18,7 +18,8 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-async fn git() -> impl actix_web::Responder {
-    eprintln!("hello");
+async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
+    eprintln!("{} {} {}", request.method(), request.path(), request.peer_addr().unwrap());
+
     actix_web::HttpResponse::Ok().body("Hello world!")
 }
