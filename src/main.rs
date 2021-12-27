@@ -22,13 +22,26 @@ async fn main() -> std::io::Result<()> {
 
 async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.method(), request.path(), request.peer_addr().unwrap());
+    //todo prevent filesystem traversal with ../../.. or something
+    let path = format!("./{}", request.path());
+    let metadata = match std::fs::metadata(&path) {
+        Ok(file) => { file }
+        Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
+    };
+    //todo symlink support?
+    if metadata.is_dir() { serve_directory(&path) }
+    else if metadata.is_file() { serve_file(&path) }
+    else { return actix_web::HttpResponse::Forbidden().finish(); }
+
+}
+
+fn serve_directory(path: &String) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
 
-    body.extend_from_slice(request.path().as_bytes());
+    body.extend_from_slice(path.as_bytes());
     body.extend_from_slice("\n".as_bytes());
 
-    //todo prevent filesystem traversal with ../../.. or something
-    let paths = match std::fs::read_dir(format!("./{}", request.path())) {
+    let paths = match std::fs::read_dir(path) {
         Ok(paths) => paths,
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::InternalServerError().finish(); }
     };
@@ -36,5 +49,13 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
         body.extend_from_slice(path.unwrap().file_name().as_bytes());
         body.extend_from_slice("\n".as_bytes());
     }
+    actix_web::HttpResponse::Ok().body(body)
+}
+
+
+fn serve_file(path: &String) -> actix_web::HttpResponse {
+    let mut body: Vec<u8> = Vec::new();
+    body.extend_from_slice(path.as_bytes());
+    body.extend_from_slice("\n".as_bytes());
     actix_web::HttpResponse::Ok().body(body)
 }
