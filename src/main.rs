@@ -6,7 +6,7 @@ async fn main() -> std::io::Result<()> {
 
     let server = actix_web::HttpServer::new(|| {
         actix_web::App::new()
-            .route("/", actix_web::web::get().to(git))
+            .route("/*", actix_web::web::get().to(git))
     });
     if verbose { eprintln!("binding to {}...", address); }
     let server = server.bind(address)?;
