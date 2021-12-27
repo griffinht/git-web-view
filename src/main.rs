@@ -27,7 +27,11 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
     body.extend_from_slice(request.path().as_bytes());
     body.extend_from_slice("\n".as_bytes());
 
-    let paths = std::fs::read_dir(format!("./{}", request.path())).unwrap();
+    //todo prevent filesystem traversal with ../../.. or something
+    let paths = match std::fs::read_dir(format!("./{}", request.path())) {
+        Ok(paths) => paths,
+        Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::InternalServerError().finish(); }
+    };
     for path in paths {
         body.extend_from_slice(path.unwrap().file_name().as_bytes());
         body.extend_from_slice("\n".as_bytes());
