@@ -1,8 +1,24 @@
 [package]
 name = "git-web-view"
 version = "0.1.0"
+authors = ["stzups"]
+license = "Unlicense"
+description = "simple viewer of git repositories for web clients written in rust"
+readme = "README.md"
+homepage = "https://github.com/stzups/git-web-view"
+repository = "https://github.com/stzups/git-web-view"
+keywords = ["server", "http", "git"]
+categories = ["web-programming::http-server"]
 edition = "2021"
+include = [
+    "Cargo.toml",
+    "src",
+    "README.md"
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "git-web-view"
+path = "src/main.rs"
 
 [dependencies]
+actix-web = "3"
