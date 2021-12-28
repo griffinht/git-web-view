@@ -36,20 +36,30 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
 fn get_nav(request_path: &str) -> Vec<u8> {
     let mut nav: Vec<String> = Vec::new();
     let mut i = 0;
-    for string in request_path.rsplit("/") {
-        eprintln!("{}", string);
-        if i == 0 && string.is_empty() { continue; }
-        if i == 0 {
-            nav.push(format!("{}{}", string, if request_path.ends_with("/") { "/" } else { "" }));
-        } else {
-            let mut dots: Vec<&str> = Vec::new();
-            for _ in 1..i {
-                dots.push("../");
-            }
-            nav.push(format!("<a href=\"{0}\">{1}{2}</a>", dots.join(""), string, if request_path.ends_with("/") { "/" } else { "" }));
+    fn get_dots(i: i32) -> String {
+        let mut dots: Vec<&str> = Vec::new();
+        for _ in 0..i {
+            dots.push("../");
         }
+        return dots.join("");
+    }
+    fn doo(directory: &str, i: i32) -> String {
+        if i == 0 { // trailing (current) file/directory should not be a link
+            String::from(directory)
+        } else {
+            format!("<a href=\"{0}\">{1}</a>", get_dots(i), directory)
+        }
+    }
+    let add_trailing_slash = request_path.ends_with("/");
+    for directory in request_path.rsplit("/") {
+        if directory.is_empty() { continue; }
+        // /example/dir/ <- needs to be added back for directories
+        let trailing_slash = if add_trailing_slash { "/" } else { "" };
+        nav.push(format!("{}{}", doo(directory, i), trailing_slash));
         i = i + 1;
     }
+    // add leading slash -> /example/dir/
+    nav.push(doo("/", i));
     nav.reverse();
     let nav = nav;
     let mut real_nav: Vec<u8> = Vec::new();
