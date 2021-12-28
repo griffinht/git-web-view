@@ -33,11 +33,39 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
 
 }
 
+fn get_nav(request_path: &str) -> Vec<u8> {
+    let mut nav: Vec<String> = Vec::new();
+    let mut i = 0;
+    for string in request_path.rsplit("/") {
+        eprintln!("{}", string);
+        if i == 0 && string.is_empty() { continue; }
+        if i == 0 {
+            nav.push(format!("{}{}", string, if request_path.ends_with("/") { "/" } else { "" }));
+        } else {
+            let mut dots: Vec<&str> = Vec::new();
+            for _ in 1..i {
+                dots.push("../");
+            }
+            nav.push(format!("<a href=\"{0}\">{1}{2}</a>", dots.join(""), string, if request_path.ends_with("/") { "/" } else { "" }));
+        }
+        i = i + 1;
+    }
+    nav.reverse();
+    let nav = nav;
+    let mut real_nav: Vec<u8> = Vec::new();
+    real_nav.extend_from_slice("<nav style=\"display: flex\">".as_bytes());
+    for n in nav {
+        real_nav.extend_from_slice(n.as_bytes());
+    }
+    real_nav.extend_from_slice("</nav>".as_bytes());
+    return real_nav;
+}
+
 fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse {
     if !request_path.ends_with("/") { return actix_web::HttpResponse::TemporaryRedirect().header("location", format!("{}/", request_path)).finish(); }
     let mut body: Vec<u8> = Vec::new();
 
-    body.extend_from_slice(format!("<nav style=\"display: flex\"><h3>{0}</h3></nav>", request_path).as_bytes());
+    body.extend(get_nav(request_path));
 
     //body.extend_from_slice("<p><a href=\".\">.</a></p>".as_bytes());
     body.extend_from_slice("<p><a href=\"..\">..</a></p>".as_bytes());
@@ -57,7 +85,7 @@ fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse
 
 fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
-    body.extend_from_slice(format!("<nav style=\"display: flex\"><h3><a href=\"./..\">..</a></h3><h3>{0}</h3></nav><pre>", request_path).as_bytes());
+    body.extend(get_nav(request_path));
     let start = std::time::Instant::now();
     let escape_html = true;
     if escape_html {
