@@ -36,7 +36,7 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
 fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
 
-    body.extend_from_slice(format!("<a href=\"{0}/..\">..</a><h3>{0}</h3><pre>", request_path).as_bytes());
+    body.extend_from_slice(format!("<nav style=\"display: flex\"><h3><a href=\"{0}/..\">..</a></h3><h3>{0}</h3></nav>", request_path).as_bytes());
 
     let paths = match std::fs::read_dir(path) {
         Ok(paths) => paths,
@@ -53,7 +53,7 @@ fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse
 
 fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
-    body.extend_from_slice(format!("<a href=\"{0}/..\">..</a><h3>{0}</h3><pre>", request_path).as_bytes());
+    body.extend_from_slice(format!("<nav style=\"display: flex\"><h3><a href=\"{0}/..\">..</a></h3><h3>{0}</h3></nav><pre>", request_path).as_bytes());
     let start = std::time::Instant::now();
     let escape_html = true;
     if escape_html {
