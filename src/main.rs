@@ -33,6 +33,11 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
 
 }
 
+fn get_head(title: &str) -> Vec<u8> {
+    let mut head: Vec<u8> = Vec::new();
+    head.extend(format!("<head><title>{}</title><style>nav {{ display inline; }} nav * {{ margin 1em; }}</style></head>", title).as_bytes());
+    return head;
+}
 fn get_nav(request_path: &str) -> Vec<u8> {
     let mut nav: Vec<String> = Vec::new();
     let mut i = 0;
@@ -73,6 +78,7 @@ fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse
     if !request_path.ends_with("/") { return actix_web::HttpResponse::TemporaryRedirect().header("location", format!("{}/", request_path)).finish(); }
     let mut body: Vec<u8> = Vec::new();
 
+    body.extend(get_head(request_path));
     body.extend(get_nav(request_path));
 
     if !request_path.eq("/") { body.extend_from_slice("<p><a href=\"..\">..</a></p>".as_bytes()); }
@@ -92,6 +98,7 @@ fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse
 
 fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
+    body.extend(get_head(request_path));
     body.extend(get_nav(request_path));
     body.extend_from_slice("<pre>".as_bytes());
     let start = std::time::Instant::now();
