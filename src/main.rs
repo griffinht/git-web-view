@@ -61,7 +61,7 @@ fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
             Ok(f) => { f }
             Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
         }
-            .replace("&", "&amp")
+            .replace("&", "&amp")//todo each replace is very slow
             .replace("<", "&lt")
             .replace(">", "&gt")
             .as_bytes());
