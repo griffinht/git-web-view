@@ -19,7 +19,7 @@ async fn main() -> std::io::Result<()> {
 }
 
 async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
-    eprintln!("{} {} {}", request.method(), request.path(), request.peer_addr().unwrap());
+    eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
     //todo prevent filesystem traversal with ../../.. or something
     let path = format!("./{}", request.path());
     let metadata = match std::fs::metadata(&path) {
@@ -86,7 +86,7 @@ fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse
     if !request_path.eq("/") { body.extend("<p><a href=\"..\">..</a></p>".as_bytes()); }
     let paths = match std::fs::read_dir(path) {
         Ok(paths) => paths,
-        Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
+        Err(err) => { eprintln!("error reading directory: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
     };
     for path in paths {
         let path = path.unwrap();
@@ -111,7 +111,7 @@ fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
     if escape_html {
         body.extend(match std::fs::read_to_string(path) {
             Ok(f) => { f }
-            Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
+            Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
         }
             .replace("&", "&amp")//todo each replace is very slow
             .replace("<", "&lt")
@@ -121,7 +121,7 @@ fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
         body.extend(&match std::fs::read(path) {
             Ok(f) => { f }
             Err(err) => {
-                eprintln!("{}", err);
+                eprintln!("error reading file: {}", err);
                 return actix_web::HttpResponse::NotFound().finish();
             }
         })
