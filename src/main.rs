@@ -100,7 +100,6 @@ fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse
     body.extend("<body>".as_bytes());
     body.extend(get_nav(request_path));
 
-    if !request_path.eq("/") { body.extend("<p><a href=\"..\">..</a></p>".as_bytes()); }
     let paths = match std::fs::read_dir(path) {
         Ok(paths) => paths,
         Err(err) => { eprintln!("error reading directory: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
