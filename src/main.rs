@@ -34,6 +34,7 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
 }
 
 fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse {
+    if !request_path.ends_with("/") { return actix_web::HttpResponse::TemporaryRedirect().header("location", format!("{}/", request_path)).finish(); }
     let mut body: Vec<u8> = Vec::new();
 
     body.extend_from_slice(format!("<nav style=\"display: flex\"><h3><a href=\"./..\">..</a></h3><h3>{0}</h3></nav>", request_path).as_bytes());
