@@ -95,6 +95,7 @@ fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse
 fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
     body.extend(get_nav(request_path));
+    body.extend_from_slice("<pre>".as_bytes());
     let start = std::time::Instant::now();
     let escape_html = true;
     if escape_html {
