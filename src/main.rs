@@ -57,14 +57,6 @@ fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
     let start = std::time::Instant::now();
     let escape_html = true;
     if escape_html {
-        body.extend_from_slice(&match std::fs::read(path) {
-            Ok(f) => { f }
-            Err(err) => {
-                eprintln!("{}", err);
-                return actix_web::HttpResponse::NotFound().finish();
-            }
-        })
-    } else {
         body.extend_from_slice(match std::fs::read_to_string(path) {
             Ok(f) => { f }
             Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
@@ -73,6 +65,14 @@ fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
             .replace("<", "&lt")
             .replace(">", "&gt")
             .as_bytes());
+    } else {
+        body.extend_from_slice(&match std::fs::read(path) {
+            Ok(f) => { f }
+            Err(err) => {
+                eprintln!("{}", err);
+                return actix_web::HttpResponse::NotFound().finish();
+            }
+        })
     }
     eprintln!("{}microseconds", std::time::Instant::now().checked_duration_since(start).unwrap().as_micros());
     body.extend_from_slice("</pre>".as_bytes());
