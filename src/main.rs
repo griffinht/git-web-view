@@ -51,15 +51,30 @@ fn serve_directory(path: &String) -> actix_web::HttpResponse {
     actix_web::HttpResponse::Ok().content_type("text/html").body(body)
 }
 
-
 fn serve_file(path: &String) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
     body.extend_from_slice(format!("<h3>{0}</h3><pre>", path).as_bytes());
-    let string = match std::fs::read_to_string(path) {
-        Ok(f) => { f }
-        Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
-    }.replace("&", "&amp").replace("<", "&lt").replace(">", "&gt");
-    body.extend_from_slice(string.as_bytes());
+    let start = std::time::Instant::now();
+    let escape_html = true;
+    if escape_html {
+        body.extend_from_slice(&match std::fs::read(path) {
+            Ok(f) => { f }
+            Err(err) => {
+                eprintln!("{}", err);
+                return actix_web::HttpResponse::NotFound().finish();
+            }
+        })
+    } else {
+        body.extend_from_slice(match std::fs::read_to_string(path) {
+            Ok(f) => { f }
+            Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
+        }
+            .replace("&", "&amp")
+            .replace("<", "&lt")
+            .replace(">", "&gt")
+            .as_bytes());
+    }
+    eprintln!("{}microseconds", std::time::Instant::now().checked_duration_since(start).unwrap().as_micros());
     body.extend_from_slice("</pre>".as_bytes());
     actix_web::HttpResponse::Ok().body(body)
 }
