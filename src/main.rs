@@ -35,7 +35,7 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
 
 fn get_head(title: &str) -> Vec<u8> {
     let mut head: Vec<u8> = Vec::new();
-    head.extend(format!("<head><title>{}</title><style>nav {{ display flex; }} nav * {{ margin 1em; }}</style></head>", title).as_bytes());
+    head.extend(format!("<head><title>{}</title></head>", title).as_bytes());
     return head;
 }
 fn get_nav(request_path: &str) -> Vec<u8> {
