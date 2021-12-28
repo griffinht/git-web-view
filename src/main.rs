@@ -43,23 +43,21 @@ fn get_nav(request_path: &str) -> Vec<u8> {
         }
         return dots.join("");
     }
-    fn get_directory_link(directory: &str, i: i32) -> String {
+    fn get_directory_link(directory: &str, i: i32, trailing: &str) -> String {
         if i == 0 { // trailing (current) file/directory should not be a link
-            String::from(directory)
+            format!("{}{}", directory, trailing)
         } else {
-            format!("<a href=\"{0}\">{1}</a>", get_repeated_string("../", i), directory)
+            format!("<a href=\"{}\">{}{}</a>", get_repeated_string("../", i), directory, trailing)
         }
     }
-    let add_trailing_slash = request_path.ends_with("/");
     for directory in request_path.rsplit("/") {
         if directory.is_empty() { continue; }
         // /example/dir/ <- needs to be added back for directories
-        let trailing_slash = if add_trailing_slash { "/" } else { "" };
-        nav.push(format!("{}{}", get_directory_link(directory, i), trailing_slash));
+        nav.push(get_directory_link(directory, i, "/"));
         i = i + 1;
     }
     // add leading slash -> /example/dir/
-    nav.push(get_directory_link("/", i));
+    nav.push(get_directory_link("/", i, ""));
     nav.reverse();
     let nav = nav;
     let mut real_nav: Vec<u8> = Vec::new();
