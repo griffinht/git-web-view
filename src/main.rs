@@ -77,8 +77,7 @@ fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse
 
     body.extend(get_nav(request_path));
 
-    //body.extend_from_slice("<p><a href=\".\">.</a></p>".as_bytes());
-    body.extend_from_slice("<p><a href=\"..\">..</a></p>".as_bytes());
+    if !request_path.eq("/") { body.extend_from_slice("<p><a href=\"..\">..</a></p>".as_bytes()); }
     let paths = match std::fs::read_dir(path) {
         Ok(paths) => paths,
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
