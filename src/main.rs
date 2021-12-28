@@ -36,18 +36,18 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
 fn get_nav(request_path: &str) -> Vec<u8> {
     let mut nav: Vec<String> = Vec::new();
     let mut i = 0;
-    fn get_dots(i: i32) -> String {
+    fn get_repeated_string(string: &str, i: i32) -> String {
         let mut dots: Vec<&str> = Vec::new();
         for _ in 0..i {
-            dots.push("../");
+            dots.push(string);
         }
         return dots.join("");
     }
-    fn doo(directory: &str, i: i32) -> String {
+    fn get_directory_link(directory: &str, i: i32) -> String {
         if i == 0 { // trailing (current) file/directory should not be a link
             String::from(directory)
         } else {
-            format!("<a href=\"{0}\">{1}</a>", get_dots(i), directory)
+            format!("<a href=\"{0}\">{1}</a>", get_repeated_string("../", i), directory)
         }
     }
     let add_trailing_slash = request_path.ends_with("/");
@@ -55,11 +55,11 @@ fn get_nav(request_path: &str) -> Vec<u8> {
         if directory.is_empty() { continue; }
         // /example/dir/ <- needs to be added back for directories
         let trailing_slash = if add_trailing_slash { "/" } else { "" };
-        nav.push(format!("{}{}", doo(directory, i), trailing_slash));
+        nav.push(format!("{}{}", get_directory_link(directory, i), trailing_slash));
         i = i + 1;
     }
     // add leading slash -> /example/dir/
-    nav.push(doo("/", i));
+    nav.push(get_directory_link("/", i));
     nav.reverse();
     let nav = nav;
     let mut real_nav: Vec<u8> = Vec::new();
