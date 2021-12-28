@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::os::unix::ffi::OsStrExt;
 
 #[actix_web::main]
@@ -43,7 +44,7 @@ fn serve_directory(path: &String) -> actix_web::HttpResponse {
 
     let paths = match std::fs::read_dir(path) {
         Ok(paths) => paths,
-        Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::InternalServerError().finish(); }
+        Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
     };
     for path in paths {
         body.extend_from_slice(path.unwrap().file_name().as_bytes());
@@ -57,5 +58,9 @@ fn serve_file(path: &String) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
     body.extend_from_slice(path.as_bytes());
     body.extend_from_slice("\n".as_bytes());
+    body.extend_from_slice(&match std::fs::read(path) {
+        Ok(f) => { f }
+        Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
+    });
     actix_web::HttpResponse::Ok().body(body)
 }
