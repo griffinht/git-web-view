@@ -76,5 +76,5 @@ fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
     }
     eprintln!("{}microseconds", std::time::Instant::now().checked_duration_since(start).unwrap().as_micros());
     body.extend_from_slice("</pre>".as_bytes());
-    actix_web::HttpResponse::Ok().body(body)
+    actix_web::HttpResponse::Ok().content_type("text/html").body(body)
 }
