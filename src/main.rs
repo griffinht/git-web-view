@@ -1,8 +1,25 @@
+mod options;
+
+#[macro_export]
+macro_rules! default_bind_address {
+    () => ("127.0.0.1:8080".to_string())
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let verbose = true;
+    let matches = match options::matches(std::env::args().collect())? {
+        None => { return Ok(()) }
+        Some(matches) => { matches }
+    };
+
+    let verbose = !matches.opt_present("quiet");
     if verbose { eprintln!("initializing..."); }
-    let address = "127.0.0.1:8080";
+
+    let address = if matches.opt_present("bind") {
+        matches.opt_get::<String>("bind").unwrap().unwrap()
+    } else {
+        default_bind_address!()
+    };
 
     let server = actix_web::HttpServer::new(|| {
         actix_web::App::new()
