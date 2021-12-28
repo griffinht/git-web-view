@@ -54,11 +54,12 @@ fn serve_directory(path: &String) -> actix_web::HttpResponse {
 
 fn serve_file(path: &String) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
-    body.extend_from_slice(format!("<h3>{}</h3><pre>", path).as_bytes());
-    body.extend_from_slice(&match std::fs::read(path) {
+    body.extend_from_slice(format!("<h3>{0}</h3><pre>", path).as_bytes());
+    let string = match std::fs::read_to_string(path) {
         Ok(f) => { f }
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
-    });
+    }.replace("&", "&amp").replace("<", "&lt").replace(">", "&gt");
+    body.extend_from_slice(string.as_bytes());
     body.extend_from_slice("</pre>".as_bytes());
     actix_web::HttpResponse::Ok().body(body)
 }
