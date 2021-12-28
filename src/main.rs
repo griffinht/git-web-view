@@ -27,16 +27,16 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
     };
     //todo symlink support?
-    if metadata.is_dir() { serve_directory(&path) }
-    else if metadata.is_file() { serve_file(&path) }
+    if metadata.is_dir() { serve_directory(&path, request.path()) }
+    else if metadata.is_file() { serve_file(&path, request.path()) }
     else { return actix_web::HttpResponse::Forbidden().finish(); }
 
 }
 
-fn serve_directory(path: &String) -> actix_web::HttpResponse {
+fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
 
-    body.extend_from_slice(format!("<h1>{}</h1>", path).as_bytes());
+    body.extend_from_slice(format!("<a href=\"{0}/..\">..</a><h3>{0}</h3><pre>", request_path).as_bytes());
 
     let paths = match std::fs::read_dir(path) {
         Ok(paths) => paths,
@@ -51,9 +51,9 @@ fn serve_directory(path: &String) -> actix_web::HttpResponse {
     actix_web::HttpResponse::Ok().content_type("text/html").body(body)
 }
 
-fn serve_file(path: &String) -> actix_web::HttpResponse {
+fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
     let mut body: Vec<u8> = Vec::new();
-    body.extend_from_slice(format!("<h3>{0}</h3><pre>", path).as_bytes());
+    body.extend_from_slice(format!("<a href=\"{0}/..\">..</a><h3>{0}</h3><pre>", request_path).as_bytes());
     let start = std::time::Instant::now();
     let escape_html = true;
     if escape_html {
