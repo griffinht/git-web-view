@@ -1,0 +1,17 @@
+<html>
+<head>
+    <title>${PATH}</title>
+    <style>
+nav {
+    display: flex;
+}
+nav * {
+    margin: .5em;
+}
+    </style>
+</head>
+<body>
+<nav>${NAV}</nav>
+${LINKS}
+</body>
+</html>
