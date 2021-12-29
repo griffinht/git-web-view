@@ -1,4 +1,5 @@
 mod options;
+mod template;
 
 #[macro_export]
 macro_rules! default_bind_address {
@@ -13,6 +14,9 @@ async fn main() -> std::io::Result<()> {
     };
 
     let verbose = !matches.opt_present("quiet");
+
+    if verbose { eprintln!("parsing default template"); }
+    if verbose { eprintln!("{}", template::parse("default-template")?); }
     if verbose { eprintln!("initializing..."); }
 
     let address = if matches.opt_present("bind") {
@@ -92,9 +96,11 @@ fn get_nav(request_path: &str) -> Vec<u8> {
 }
 
 fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse {
+    // /example/dir -> /example/dir/
     if !request_path.ends_with("/") { return actix_web::HttpResponse::TemporaryRedirect().header("location", format!("{}/", request_path)).finish(); }
     let mut body: Vec<u8> = Vec::new();
 
+    
     body.extend("<html>".as_bytes());
     body.extend(get_head(request_path));
     body.extend("<body>".as_bytes());
