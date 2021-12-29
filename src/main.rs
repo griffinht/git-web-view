@@ -16,7 +16,8 @@ async fn main() -> std::io::Result<()> {
     let verbose = !matches.opt_present("quiet");
 
     if verbose { eprintln!("parsing default template"); }
-    if verbose { eprintln!("{}", template::parse("default-template")?); }
+    let parsed = template::parse("default-template")?;
+    
     if verbose { eprintln!("initializing..."); }
 
     let address = if matches.opt_present("bind") {

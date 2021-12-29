@@ -1,15 +1,15 @@
 use std::io::BufRead;
 use std::io::Read;
 
-struct Parsed { 
+pub struct Parsed { 
     buf: Vec<u8>, 
     tag: Option<String>,
 }
 
-pub fn parse(path: &str) -> std::io::Result<&str> {
+pub fn parse(path: &str) -> std::io::Result<Vec<Parsed>> {
     let file = std::fs::File::open(format!("{}/directory", path))?;
     
-    let mut parse: Vec<Parsed> = Vec::new();
+    let mut parsed: Vec<Parsed> = Vec::new();
     let mut reader = std::io::BufReader::new(file);
     let mut buf: Vec<u8> = Vec::new();
     loop {
@@ -36,22 +36,15 @@ pub fn parse(path: &str) -> std::io::Result<&str> {
         let mut tag: Vec<u8> = Vec::new();
         let read = reader.read_until('}' as u8, &mut tag)?;
         let tag = &tag[0..read - 1];
-        parse.push(Parsed {
+        parsed.push(Parsed {
             buf: buf,
             tag: Some(String::from_utf8_lossy(tag).to_string())
         });
         buf = Vec::new();
     }
-    parse.push(Parsed {
+    parsed.push(Parsed {
         buf: buf,
         tag: None
     });
-    for parse in parse {
-        eprint!("{}{}", String::from_utf8_lossy(&parse.buf), match parse.tag {
-            Some(tag) => tag,
-            None => "blank".to_string()
-        });
-    }
-    eprintln!();
-    return Ok("done");
+    return Ok(parsed);
 }
