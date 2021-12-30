@@ -3,8 +3,8 @@ use std::io::Read;
 
 #[derive(Clone)]
 pub struct Parsed {
-    buf: Vec<u8>,
-    tag: Option<String>,
+    pub(crate) buf: Vec<u8>,
+    pub(crate) tag: Option<String>,
 }
 
 pub fn parse_directory(path: &str) -> std::io::Result<std::collections::HashMap<String, Vec<Parsed>>> {

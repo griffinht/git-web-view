@@ -54,7 +54,31 @@ async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<State>
     };
     //todo symlink support?
     eprintln!("{}", state.template.len());
-    if metadata.is_dir() { serve_directory(&path, request.path()) }
+    if metadata.is_dir() {
+        let t = "directory";
+        let template = state.template.get(t);
+        if template.is_none() { eprintln!("no template for {}", t); return actix_web::HttpResponse::InternalServerError().finish(); }
+        let template = template.unwrap();
+        let mut body: Vec<u8> = Vec::new();
+        for parsed in template {
+            body.extend_from_slice(&*parsed.buf);
+            match &parsed.tag {
+                None => { }
+                Some(tag) => {
+                    match tag.as_str() {
+                        "NAV" => {
+                            body.extend_from_slice(&get_nav(request.path()));
+                        }
+                        "LINKS" => { body.extend_from_slice(&get_links(&path).unwrap()); }
+                        "PATH" => { body.extend_from_slice(path.as_bytes()); }
+                        _ => { eprintln!("unknown tag {}", tag); return actix_web::HttpResponse::InternalServerError().finish(); }
+                    }
+                }
+            };
+        }
+        return actix_web::HttpResponse::Ok().content_type("text/html").body(body);
+        //serve_directory(&path, request.path())
+    }
     else if metadata.is_file() { serve_file(&path, request.path()) }
     else { return actix_web::HttpResponse::Forbidden().finish(); }
 
@@ -100,7 +124,18 @@ fn get_nav(request_path: &str) -> Vec<u8> {
     real_nav.extend_from_slice("</nav>".as_bytes());
     return real_nav;
 }
-
+fn get_links(path: &String) -> std::io::Result<Vec<u8>> {
+    let mut links: Vec<u8> = Vec::new();
+    let paths = std::fs::read_dir(path)?;
+    for path in paths {
+        let path = path.unwrap();
+        links.extend(format!("<p><a href=\"{0}{1}\">{0}{1}</a></p>\n", match path.file_name().into_string() {
+            Ok(string) => { string }
+            Err(_) => { return Err(std::io::Error::new(std::io::ErrorKind::Other, "couldn't convert path from OsString to String")); }
+        }, if path.file_type().unwrap().is_dir() { "/" } else { "" }).as_bytes());
+    }
+    return Ok(links);
+}
 fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse {
     // /example/dir -> /example/dir/
     if !request_path.ends_with("/") { return actix_web::HttpResponse::TemporaryRedirect().header("location", format!("{}/", request_path)).finish(); }
