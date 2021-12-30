@@ -2,11 +2,8 @@
 <head>
     <title>${PATH}</title>
     <style>
-nav {
-    display: flex;
-}
-nav * {
-    margin: .5em;
+body {
+  background-color: #ff00ff;
 }
     </style>
 </head>
