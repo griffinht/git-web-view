@@ -9,6 +9,6 @@ body {
 </head>
 <body>
 <nav>${NAV}</nav>
-${DIRECTORY}
+<pre>${FILE}</pre>
 </body>
 </html>
