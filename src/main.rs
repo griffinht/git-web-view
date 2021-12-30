@@ -6,6 +6,9 @@ macro_rules! default_bind_address {
     () => ("127.0.0.1:8080".to_string())
 }
 
+struct State {
+    template: std::collections::HashMap<String, Vec<template::Parsed>>
+}
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let matches = match options::matches(std::env::args().collect())? {
@@ -17,11 +20,7 @@ async fn main() -> std::io::Result<()> {
 
     let template_path = "./default-template/";
     if verbose { eprintln!("parsing default template {}", template_path); }
-    let template = template::parse_directory(template_path)?;
-    for parse in template {
-        eprintln!("{}: {}", parse.0, parse.1.len());
-    }
-
+    //todo
     if verbose { eprintln!("initializing..."); }
 
     let address = if matches.opt_present("bind") {
@@ -32,6 +31,7 @@ async fn main() -> std::io::Result<()> {
 
     let server = actix_web::HttpServer::new(|| {
         actix_web::App::new()
+            .data(State { template: template::parse_directory(template_path).unwrap() })
             .route("/*", actix_web::web::get().to(git))
     });
     if verbose { eprintln!("binding to {}...", address); }
@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
+async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<State>) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
     //todo prevent filesystem traversal with ../../.. or something
     let path = format!("./{}", request.path());
@@ -53,6 +53,7 @@ async fn git(request: actix_web::HttpRequest) -> impl actix_web::Responder {
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
     };
     //todo symlink support?
+    eprintln!("{}", state.template.len());
     if metadata.is_dir() { serve_directory(&path, request.path()) }
     else if metadata.is_file() { serve_file(&path, request.path()) }
     else { return actix_web::HttpResponse::Forbidden().finish(); }

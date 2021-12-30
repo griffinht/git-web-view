@@ -1,8 +1,9 @@
 use std::io::BufRead;
 use std::io::Read;
 
-pub struct Parsed { 
-    buf: Vec<u8>, 
+#[derive(Clone)]
+pub struct Parsed {
+    buf: Vec<u8>,
     tag: Option<String>,
 }
 
