@@ -15,9 +15,13 @@ async fn main() -> std::io::Result<()> {
 
     let verbose = !matches.opt_present("quiet");
 
-    if verbose { eprintln!("parsing default template"); }
-    let parsed = template::parse("default-template")?;
-    
+    let template_path = "./default-template/";
+    if verbose { eprintln!("parsing default template {}", template_path); }
+    let template = template::parse_directory(template_path)?;
+    for parse in template {
+        eprintln!("{}: {}", parse.0, parse.1.len());
+    }
+
     if verbose { eprintln!("initializing..."); }
 
     let address = if matches.opt_present("bind") {

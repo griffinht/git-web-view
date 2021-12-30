@@ -6,8 +6,20 @@ pub struct Parsed {
     tag: Option<String>,
 }
 
-pub fn parse(path: &str) -> std::io::Result<Vec<Parsed>> {
-    let file = std::fs::File::open(format!("{}/directory", path))?;
+pub fn parse_directory(path: &str) -> std::io::Result<std::collections::HashMap<String, Vec<Parsed>>> {
+    let mut map: std::collections::HashMap<String, Vec<Parsed>> = std::collections::HashMap::new();
+    for file in std::fs::read_dir(path)? {
+        let file = file?;
+        //todo symlinks and dirs
+        map.insert(file.file_name().into_string().unwrap(), match parse(file.path()) {
+            Ok(parsed) => { parsed }
+            Err(err) => { eprintln!("error parsing {}: {}", file.path().as_os_str().to_str().unwrap(), err); continue; }
+        });
+    }
+    return Ok(map);
+}
+pub fn parse(path: std::path::PathBuf) -> std::io::Result<Vec<Parsed>> {
+    let file = std::fs::File::open(path)?;
     
     let mut parsed: Vec<Parsed> = Vec::new();
     let mut reader = std::io::BufReader::new(file);
