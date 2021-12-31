@@ -1,5 +1,4 @@
 use std::io::BufRead;
-use std::io::Read;
 
 pub mod nav;
 pub mod links;
@@ -10,26 +9,43 @@ pub struct Parsed {
     pub(crate) tag: Option<String>,
 }
 
-pub fn parse_directory_default() -> std::io::Result<std::collections::HashMap<String, Vec<Parsed>>> {
-    parse_directory("default-template")
-}
-pub fn parse_directory(path: &str) -> std::io::Result<std::collections::HashMap<String, Vec<Parsed>>> {
+pub fn parse_directory_default() -> std::collections::HashMap<String, Vec<Parsed>> {
     let mut map: std::collections::HashMap<String, Vec<Parsed>> = std::collections::HashMap::new();
-    for file in std::fs::read_dir(path)? {
-        let file = file?;
+    fn doo(map: &mut std::collections::HashMap<String, Vec<Parsed>>, name: String, bytes: &[u8]) {
+        match parse(std::io::BufReader::new(bytes)) {
+            Ok(parse) => { map.insert(name, parse); }
+            Err(err) => { eprintln!("error parsing: {}", err); }
+        };
+    }
+    doo(&mut map, "directory.html".parse().unwrap(), include_bytes!("../default-template/directory.html"));
+    doo(&mut map, "file.html".parse().unwrap(), include_bytes!("../default-template/file.html"));
+    return map;
+}
+
+pub fn parse_directory(path: &str) -> std::collections::HashMap<String, Vec<Parsed>> {
+    let mut map: std::collections::HashMap<String, Vec<Parsed>> = std::collections::HashMap::new();
+    for file in match std::fs::read_dir(path) {
+        Ok(file) => file,
+        Err(err) => { eprintln!("err reading directory {}: {}", path, err); return map; }
+    } {
+        let file = match file {
+            Ok(file) => file,
+            Err(err) => { eprintln!("err reading {}: {}", path, err); continue; }
+        };
         //todo symlinks and dirs
-        map.insert(file.file_name().into_string().unwrap(), match parse(file.path()) {
+        map.insert(file.file_name().into_string().unwrap(), match parse_file(file.path()) {
             Ok(parsed) => { parsed }
             Err(err) => { eprintln!("error parsing {}: {}", file.path().as_os_str().to_str().unwrap(), err); continue; }
         });
     }
-    return Ok(map);
+    map
 }
-pub fn parse(path: std::path::PathBuf) -> std::io::Result<Vec<Parsed>> {
+fn parse_file(path: std::path::PathBuf) -> std::io::Result<Vec<Parsed>> {
     let file = std::fs::File::open(path)?;
-    
+    parse(std::io::BufReader::new(file))
+}
+pub fn parse<T: BufRead>(mut reader: T) -> std::io::Result<Vec<Parsed>> {
     let mut parsed: Vec<Parsed> = Vec::new();
-    let mut reader = std::io::BufReader::new(file);
     let mut buf: Vec<u8> = Vec::new();
     loop {
         let read = reader.read_until('$' as u8, &mut buf)?;
