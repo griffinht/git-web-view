@@ -29,10 +29,16 @@ async fn main() -> std::io::Result<()> {
         default_bind_address!()
     };
 
-    let server = actix_web::HttpServer::new(|| {
+    let server = actix_web::HttpServer::new(move || {
         actix_web::App::new()
             .data(State { template: template::parse_directory(template_path).unwrap() })
             .route("/*", actix_web::web::get().to(git))
+            .wrap(actix_web::middleware::Compress::new(
+                if matches.opt_present("disable-compression") {
+                    actix_web::http::ContentEncoding::Identity
+                } else {
+                    actix_web::http::ContentEncoding::Auto
+                }))
     });
     if verbose { eprintln!("binding to {}...", address); }
     let server = server.bind(address)?;

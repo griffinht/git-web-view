@@ -6,6 +6,7 @@ pub fn matches(arguments: Vec<String>) -> std::result::Result<std::option::Optio
     options.optflag("v", "version", "print version");
     options.optflag("q", "quiet", "don't print verbose debug information like startup and shutdown messages");
     options.optopt("b", "bind", format!("bind to address (default {})", crate::default_bind_address!()).as_str(), "<address>");
+    options.optflag("c", "disable-compression", "");
 
     if arguments.len() == 0 { return Err(std::io::Error::new(std::io::ErrorKind::Other, "missing program name from argv")); }
     let matches = match options.parse(&arguments[1..]) {
