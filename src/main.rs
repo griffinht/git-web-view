@@ -53,7 +53,7 @@ async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<State>
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
     };
     //todo symlink support?
-    eprintln!("{}", state.template.len());
+
     let template_name;
     if metadata.is_dir() { template_name = "directory.html"; }
     else if metadata.is_file() { template_name = "file.html"; }
