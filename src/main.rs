@@ -19,9 +19,6 @@ async fn main() -> std::io::Result<()> {
 
     let verbose = !matches.opt_present("quiet");
 
-    let template_path = "./default-template/";
-    if verbose { eprintln!("parsing default template {}", template_path); }
-    //todo
     if verbose { eprintln!("initializing..."); }
 
     let address = if matches.opt_present("bind") {
@@ -33,7 +30,7 @@ async fn main() -> std::io::Result<()> {
     let server = actix_web::HttpServer::new(move || {
         actix_web::App::new()
             .data(State { template: if matches.opt_present("template-directory") {
-                template::parse_directory(template_path)
+                template::parse_directory(matches.opt_get::<String>("template-directory").unwrap().unwrap().as_str())
             } else {
                 template::parse_directory_default()
             }
