@@ -54,79 +54,53 @@ async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<State>
     };
     //todo symlink support?
     eprintln!("{}", state.template.len());
-    if metadata.is_dir() {
-        let t = "directory";
-        let template = state.template.get(t);
-        if template.is_none() { eprintln!("no template for {}", t); return actix_web::HttpResponse::InternalServerError().finish(); }
-        let template = template.unwrap();
-        let mut body: Vec<u8> = Vec::new();
-        for parsed in template {
-            body.extend_from_slice(&*parsed.buf);
-            match &parsed.tag {
-                None => { }
-                Some(tag) => {
-                    match tag.as_str() {
-                        "NAV" => {
-                            body.extend_from_slice(&get_nav(request.path()));
-                        }
-                        "DIRECTORY" => { body.extend_from_slice(&get_links(&path).unwrap()); }
-                        "PATH" => { body.extend_from_slice(path.as_bytes()); }
-                        _ => { eprintln!("unknown tag {}", tag); return actix_web::HttpResponse::InternalServerError().finish(); }
+    let template_name;
+    if metadata.is_dir() { template_name = "directory"; }
+    else if metadata.is_file() { template_name = "file"; }
+    else { eprintln!("not a file or a directory"); return actix_web::HttpResponse::NotFound().finish(); }
+    let template = state.template.get(template_name);
+
+    if template.is_none() { eprintln!("no template for {}", template_name); return actix_web::HttpResponse::InternalServerError().finish(); }
+    let template = template.unwrap();
+    let mut body: Vec<u8> = Vec::new();
+    for parsed in template {
+        body.extend_from_slice(&*parsed.buf);
+        match &parsed.tag {
+            None => { }
+            Some(tag) => {
+                match tag.as_str() {
+                    "NAV" => {
+                        body.extend_from_slice(&get_nav(request.path()));
                     }
-                }
-            };
-        }
-        return actix_web::HttpResponse::Ok().content_type("text/html").body(body);
-        //serve_directory(&path, request.path())
-    }
-    else if metadata.is_file() {
-        let t = "file";
-        let template = state.template.get(t);
-        if template.is_none() { eprintln!("no templatae for {}", t); return actix_web::HttpResponse::InternalServerError().finish(); }
-        let template = template.unwrap();
-        let mut body: Vec<u8> = Vec::new();
-        for parsed in template {
-            body.extend_from_slice(&*parsed.buf);
-            match &parsed.tag {
-                None => {}
-                Some(tag) => {
-                    match tag.as_str() {
-                        "NAV" => {
-                            body.extend_from_slice(&get_nav(request.path()));
-                        }
-                        "PATH" => { body.extend_from_slice(path.as_bytes()); }
-                        "FILE" => {
-                            let escape_html = true;
-                            if escape_html {
-                                body.extend(match std::fs::read_to_string(&path) {
-                                    Ok(f) => { f }
-                                    Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
-                                }
-                                    .replace("&", "&amp")//todo each replace is very slow
-                                    .replace("<", "&lt")
-                                    .replace(">", "&gt")
-                                    .as_bytes());
-                            } else {
-                                body.extend(&match std::fs::read(&path) {
-                                    Ok(f) => { f }
-                                    Err(err) => {
-                                        eprintln!("error reading file: {}", err);
-                                        return actix_web::HttpResponse::NotFound().finish();
-                                    }
-                                })
+                    "DIRECTORY" => { body.extend_from_slice(&get_links(&path).unwrap()); }
+                    "PATH" => { body.extend_from_slice(path.as_bytes()); }
+                    "FILE" => {
+                        let escape_html = true;
+                        if escape_html {
+                            body.extend(match std::fs::read_to_string(&path) {
+                                Ok(f) => { f }
+                                Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
                             }
+                                .replace("&", "&amp")//todo each replace is very slow
+                                .replace("<", "&lt")
+                                .replace(">", "&gt")
+                                .as_bytes());
+                        } else {
+                            body.extend(&match std::fs::read(&path) {
+                                Ok(f) => { f }
+                                Err(err) => {
+                                    eprintln!("error reading file: {}", err);
+                                    return actix_web::HttpResponse::NotFound().finish();
+                                }
+                            })
                         }
-                        _ => { eprintln!("unknown tag {}", tag); return actix_web::HttpResponse::InternalServerError().finish(); }
                     }
+                    _ => { eprintln!("unknown tag {}", tag); return actix_web::HttpResponse::InternalServerError().finish(); }
                 }
             }
-        }
-
-        actix_web::HttpResponse::Ok().content_type("text/html").body(body)
-        //serve_file(&path, request.path())
+        };
     }
-    else { return actix_web::HttpResponse::Forbidden().finish(); }
-
+    return actix_web::HttpResponse::Ok().content_type("text/html").body(body);
 }
 fn get_nav(request_path: &str) -> Vec<u8> {
     let mut nav: Vec<String> = Vec::new();
