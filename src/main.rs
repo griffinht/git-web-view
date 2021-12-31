@@ -128,12 +128,6 @@ async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<State>
     else { return actix_web::HttpResponse::Forbidden().finish(); }
 
 }
-
-fn get_head(title: &str) -> Vec<u8> {
-    let mut head: Vec<u8> = Vec::new();
-    head.extend(format!("<head><title>{}</title></head>", title).as_bytes());
-    return head;
-}
 fn get_nav(request_path: &str) -> Vec<u8> {
     let mut nav: Vec<String> = Vec::new();
     let mut i = 0;
@@ -180,62 +174,4 @@ fn get_links(path: &String) -> std::io::Result<Vec<u8>> {
         }, if path.file_type().unwrap().is_dir() { "/" } else { "" }).as_bytes());
     }
     return Ok(links);
-}
-fn serve_directory(path: &String, request_path: &str) -> actix_web::HttpResponse {
-    // /example/dir -> /example/dir/
-    if !request_path.ends_with("/") { return actix_web::HttpResponse::TemporaryRedirect().header("location", format!("{}/", request_path)).finish(); }
-    let mut body: Vec<u8> = Vec::new();
-
-    
-    body.extend("<html>".as_bytes());
-    body.extend(get_head(request_path));
-    body.extend("<body>".as_bytes());
-    body.extend(get_nav(request_path));
-
-    let paths = match std::fs::read_dir(path) {
-        Ok(paths) => paths,
-        Err(err) => { eprintln!("error reading directory: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
-    };
-    for path in paths {
-        let path = path.unwrap();
-        body.extend(format!("<p><a href=\"{0}{1}\">{0}{1}</a></p>\n", match path.file_name().into_string() {
-            Ok(string) => { string }
-            Err(_) => { eprintln!("couldn't convert path from OsString to String"); return actix_web::HttpResponse::InternalServerError().finish(); }
-        }, if path.file_type().unwrap().is_dir() { "/" } else { "" }).as_bytes());
-    }
-    body.extend("</body></html>".as_bytes());
-    actix_web::HttpResponse::Ok().content_type("text/html").body(body)
-}
-
-fn serve_file(path: &String, request_path: &str) -> actix_web::HttpResponse {
-    let mut body: Vec<u8> = Vec::new();
-    body.extend("<html>".as_bytes());
-    body.extend(get_head(request_path));
-    body.extend("<body>".as_bytes());
-    body.extend(get_nav(request_path));
-    body.extend("<pre>".as_bytes());
-    let start = std::time::Instant::now();
-    let escape_html = true;
-    if escape_html {
-        body.extend(match std::fs::read_to_string(path) {
-            Ok(f) => { f }
-            Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
-        }
-            .replace("&", "&amp")//todo each replace is very slow
-            .replace("<", "&lt")
-            .replace(">", "&gt")
-            .as_bytes());
-    } else {
-        body.extend(&match std::fs::read(path) {
-            Ok(f) => { f }
-            Err(err) => {
-                eprintln!("error reading file: {}", err);
-                return actix_web::HttpResponse::NotFound().finish();
-            }
-        })
-    }
-    eprintln!("{}microseconds", std::time::Instant::now().checked_duration_since(start).unwrap().as_micros());
-    body.extend("</pre>".as_bytes());
-    body.extend("</body></html>".as_bytes());
-    actix_web::HttpResponse::Ok().content_type("text/html").body(body)
 }
