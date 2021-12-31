@@ -7,7 +7,7 @@ macro_rules! default_bind_address {
 }
 
 struct State {
-    template: std::collections::HashMap<String, Vec<template::Parsed>>
+    template: Option<std::collections::HashMap<String, Vec<template::Parsed>>>
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -31,7 +31,15 @@ async fn main() -> std::io::Result<()> {
 
     let server = actix_web::HttpServer::new(move || {
         actix_web::App::new()
-            .data(State { template: template::parse_directory(template_path).unwrap() })
+            .data(State { template: match if matches.opt_present("template-directory") {
+                template::parse_directory(template_path)
+            } else {
+                template::parse_directory_default()
+            } {
+                Ok(template) => Some(template),
+                Err(err) => { eprintln!("error parsing template: {}", err); None }
+            }
+            })
             .route("/*", actix_web::web::get().to(git))
             .wrap(actix_web::middleware::Compress::new(
                 if matches.opt_present("disable-compression") {
@@ -64,7 +72,10 @@ async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<State>
     if metadata.is_dir() { template_name = "directory.html"; }
     else if metadata.is_file() { template_name = "file.html"; }
     else { eprintln!("not a file or a directory"); return actix_web::HttpResponse::NotFound().finish(); }
-    let template = state.template.get(template_name);
+    let template = match &state.template {
+        None => { return actix_web::HttpResponse::NotFound().finish(); }
+        Some(template) => template
+    }.get(template_name);
 
     if template.is_none() { eprintln!("no template for {}", template_name); return actix_web::HttpResponse::InternalServerError().finish(); }
     let template = template.unwrap();

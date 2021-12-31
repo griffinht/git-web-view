@@ -7,6 +7,9 @@ pub struct Parsed {
     pub(crate) tag: Option<String>,
 }
 
+pub fn parse_directory_default() -> std::io::Result<std::collections::HashMap<String, Vec<Parsed>>> {
+    parse_directory("default-template")
+}
 pub fn parse_directory(path: &str) -> std::io::Result<std::collections::HashMap<String, Vec<Parsed>>> {
     let mut map: std::collections::HashMap<String, Vec<Parsed>> = std::collections::HashMap::new();
     for file in std::fs::read_dir(path)? {
