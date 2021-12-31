@@ -87,9 +87,9 @@ async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<State>
             Some(tag) => {
                 match tag.as_str() {
                     "NAV" => {
-                        body.extend_from_slice(&get_nav(request.path()));
+                        body.extend_from_slice(&template::nav::get_nav(request.path()));
                     }
-                    "DIRECTORY" => { body.extend_from_slice(&get_links(&path).unwrap()); }
+                    "DIRECTORY" => { body.extend_from_slice(&template::links::get_links(&path).unwrap()); }
                     "PATH" => { body.extend_from_slice(path.as_bytes()); }
                     "FILE" => {
                         let escape_html = true;
@@ -118,51 +118,4 @@ async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<State>
         };
     }
     return actix_web::HttpResponse::Ok().content_type("text/html").body(body);
-}
-fn get_nav(request_path: &str) -> Vec<u8> {
-    let mut nav: Vec<String> = Vec::new();
-    let mut i = 0;
-    fn get_repeated_string(string: &str, i: i32) -> String {
-        let mut dots: Vec<&str> = Vec::new();
-        for _ in 0..i {
-            dots.push(string);
-        }
-        return dots.join("");
-    }
-    fn get_directory_link(directory: &str, i: i32, trailing: &str) -> String {
-        if i == 0 { // trailing (current) file/directory should not be a link
-            format!("{}{}", directory, trailing)
-        } else {
-            format!("<a href=\"{}\">{}{}</a>", get_repeated_string("../", i), directory, trailing)
-        }
-    }
-    for directory in request_path.rsplit("/") {
-        if directory.is_empty() { continue; }
-        // /example/dir/ <- needs to be added back for directories
-        nav.push(get_directory_link(directory, i, "/"));
-        i = i + 1;
-    }
-    // add leading slash -> /example/dir/
-    nav.push(get_directory_link("/", i, ""));
-    nav.reverse();
-    let nav = nav;
-    let mut real_nav: Vec<u8> = Vec::new();
-    real_nav.extend_from_slice("<nav>".as_bytes());
-    for n in nav {
-        real_nav.extend_from_slice(n.as_bytes());
-    }
-    real_nav.extend_from_slice("</nav>".as_bytes());
-    return real_nav;
-}
-fn get_links(path: &String) -> std::io::Result<Vec<u8>> {
-    let mut links: Vec<u8> = Vec::new();
-    let paths = std::fs::read_dir(path)?;
-    for path in paths {
-        let path = path.unwrap();
-        links.extend(format!("<p><a href=\"{0}{1}\">{0}{1}</a></p>\n", match path.file_name().into_string() {
-            Ok(string) => { string }
-            Err(_) => { return Err(std::io::Error::new(std::io::ErrorKind::Other, "couldn't convert path from OsString to String")); }
-        }, if path.file_type().unwrap().is_dir() { "/" } else { "" }).as_bytes());
-    }
-    return Ok(links);
 }

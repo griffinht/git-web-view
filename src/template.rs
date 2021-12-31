@@ -1,6 +1,9 @@
 use std::io::BufRead;
 use std::io::Read;
 
+pub mod nav;
+pub mod links;
+
 #[derive(Clone)]
 pub struct Parsed {
     pub(crate) buf: Vec<u8>,
