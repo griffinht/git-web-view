@@ -1,4 +1,4 @@
-pub async fn git(request: actix_web::HttpRequest, state: actix_web::web::Data<crate::State>) -> impl actix_web::Responder {
+pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Data<crate::State>) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
     //todo prevent filesystem traversal with ../../.. or something
     let path = format!("./{}", request.path());

@@ -1,6 +1,6 @@
 mod options;
 mod template;
-mod git;
+mod response;
 
 #[macro_export]
 macro_rules! default_bind_address {
@@ -36,7 +36,7 @@ async fn main() -> std::io::Result<()> {
                 template::parse_directory_default()
             }
             })
-            .route("/*", actix_web::web::get().to(git::git))
+            .route("/*", actix_web::web::get().to(response::response))
             .wrap(actix_web::middleware::Compress::new(
                 if matches.opt_present("disable-compression") {
                     actix_web::http::ContentEncoding::Identity
