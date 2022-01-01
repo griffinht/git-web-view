@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
-use crate::template::Parsed;
+use std::fs::File;
+use std::io::{BufReader, Read};
 
 pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Data<std::collections::HashMap<String, Vec<crate::template::Parsed>>>) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
@@ -59,9 +59,10 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
         };
     }
     return actix_web::HttpResponse::Ok().content_type("text/html").body(body);*/
-    struct Response {
-        template: VecDeque<crate::template::Parsed>,
+    struct Response  {
+        template: std::collections::VecDeque<crate::template::Parsed>,
         request: actix_web::HttpRequest,
+        reader: Option<std::io::BufReader<std::fs::File>>,
     }
     impl futures::Stream for Response {
         type Item = Result<actix_web::web::Bytes, std::io::Error>;
@@ -71,6 +72,18 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                 None => { return std::task::Poll::Ready(None); }
                 Some(parsed) => parsed
             };
+            match &self.reader {
+                None => {}
+                Some(mut reader) => {
+                    let mut body: Vec<u8> = Vec::new();
+                    let n = reader.read(&mut body);
+                    match n {
+                        Ok(n) => { eprintln!("{}", n); }
+                        Err(err) => { eprintln!("{}", err); }
+                    }
+                    self.reader = None;
+                }
+            }
 
             let path = format!("./{}", self.request.path());
             let mut body = Vec::from(parsed.buf);
@@ -119,5 +132,5 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
         }
     }
 
-    return actix_web::HttpResponse::Ok().content_type("text/html").streaming(Response { template: VecDeque::from(template.clone()), request });
+    return actix_web::HttpResponse::Ok().content_type("text/html").streaming(Response { template: std::collections::VecDeque::from(template.clone()), request, reader: None });
 }
