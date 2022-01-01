@@ -7,10 +7,6 @@ macro_rules! default_bind_address {
     () => ("127.0.0.1:8080".to_string())
 }
 
-pub struct State {
-    template: std::collections::HashMap<String, Vec<template::Parsed>>
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let matches = match options::matches(std::env::args().collect())? {
@@ -30,12 +26,12 @@ async fn main() -> std::io::Result<()> {
 
     let server = actix_web::HttpServer::new(move || {
         actix_web::App::new()
-            .data(State { template: if matches.opt_present("template-directory") { //todo only do this once
+            .data(if matches.opt_present("template-directory") { //todo only do this once
                 template::parse_directory(matches.opt_get::<String>("template-directory").unwrap().unwrap().as_str())
             } else {
                 template::parse_directory_default()
             }
-            })
+            )
             .route("/*", actix_web::web::get().to(response::response))
             .wrap(actix_web::middleware::Compress::new(
                 if matches.opt_present("disable-compression") {
