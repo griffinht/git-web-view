@@ -28,7 +28,7 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                         body.extend_from_slice(&crate::template::nav::get_nav(request.path()));
                     }
                     "DIRECTORY" => { body.extend_from_slice(&crate::template::links::get_links(&path).unwrap()); }
-                    "PATH" => { body.extend_from_slice(path.as_bytes()); }
+                    "PATH" => { body.extend_from_slice(request.path().as_bytes()); }
                     "FILE" => {
                         let escape_html = true;
                         if escape_html {
