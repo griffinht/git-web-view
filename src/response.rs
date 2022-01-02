@@ -50,7 +50,10 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                     "NAV" => {
                         body.extend_from_slice(&crate::template::nav::get_nav(request.path()));
                     }
-                    "DIRECTORY" => { body.extend_from_slice(&crate::template::links::get_links(path.as_str()).unwrap()); }
+                    "DIRECTORY" => { match &crate::template::links::get_links(path.as_str()) {
+                        Ok(links) => { body.extend_from_slice(links); }
+                        Err(err) => { eprintln!("error getting links from {}: {}", path, err); return actix_web::HttpResponse::InternalServerError().finish(); }
+                    } }
                     "PATH" => { body.extend_from_slice(request.path().as_bytes()); }
                     "FILE" => {
                         let string = match std::fs::read_to_string(path.as_str()) {
