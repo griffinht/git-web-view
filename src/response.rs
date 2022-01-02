@@ -34,36 +34,24 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                     "DIRECTORY" => { body.extend_from_slice(&crate::template::links::get_links(&format!("{}{}", state.directory, request.path())).unwrap()); }
                     "PATH" => { body.extend_from_slice(request.path().as_bytes()); }
                     "FILE" => {
-                        let escape_html = true;
-                        let parse_markdown = true;
-                        if escape_html {
-                            let string = match std::fs::read_to_string(format!("{}{}", state.directory, request.path())) {
-                                Ok(f) => { f }
-                                Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
-                            };
-                            if parse_markdown && request.path().ends_with(".md") {
-                                let options = pulldown_cmark::Options::empty();
-                                let parser = pulldown_cmark::Parser::new_ext(&string, options);
-                                let mut output_string = String::new();
-                                pulldown_cmark::html::push_html(&mut output_string, parser);
-                                body.extend(output_string.as_bytes());
-                            } else {
-                                body.extend("<pre>".as_bytes());
-                                let string = string
-                                    .replace("&", "&amp")//todo each replace is very slow
-                                    .replace("<", "&lt")
-                                    .replace(">", "&gt");
-                                body.extend(string.as_bytes());
-                                body.extend("</pre>".as_bytes());
-                            }
+                        let string = match std::fs::read_to_string(format!("{}{}", state.directory, request.path())) {
+                            Ok(f) => { f }
+                            Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
+                        };
+                        if request.path().ends_with(".md") {
+                            let options = pulldown_cmark::Options::empty();
+                            let parser = pulldown_cmark::Parser::new_ext(&string, options);
+                            let mut output_string = String::new();
+                            pulldown_cmark::html::push_html(&mut output_string, parser);
+                            body.extend(output_string.as_bytes());
                         } else {
-                            body.extend(&match std::fs::read(format!("{}{}", state.directory, request.path())) {
-                                Ok(f) => { f }
-                                Err(err) => {
-                                    eprintln!("error reading file: {}", err);
-                                    return actix_web::HttpResponse::NotFound().finish();
-                                }
-                            })
+                            body.extend("<pre>".as_bytes());
+                            let string = string
+                                .replace("&", "&amp")//todo each replace is very slow
+                                .replace("<", "&lt")
+                                .replace(">", "&gt");
+                            body.extend(string.as_bytes());
+                            body.extend("</pre>".as_bytes());
                         }
                     }
                     _ => { eprintln!("unknown tag {}", tag); return actix_web::HttpResponse::InternalServerError().finish(); }
@@ -72,4 +60,8 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
         };
     }
     return actix_web::HttpResponse::Ok().content_type("text/html").body(body);
+}
+
+fn serve() {
+
 }
