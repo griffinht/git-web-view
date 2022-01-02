@@ -1,0 +1,8 @@
+services:
+  git-web-view:
+    build: .
+    ports:
+      - 8080:80
+    volumes:
+      - ./:/git
+    command: --base-directory /git --directory /git
