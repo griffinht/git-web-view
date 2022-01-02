@@ -1,14 +1,33 @@
 pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Data<crate::State>) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
 
-    match git2::Repository::open(&state.directory) {
+    //todo prevent filesystem traversal with ../../.. or something
+    let path = match &state.directory {
+        None => { request.path().parse().unwrap() }
+        Some(directory) => { format!("{}{}", directory, request.path()) }
+    };
+
+    match git2::Repository::open(&path) {
         Ok(repository) => { eprintln!("{}", repository.head().unwrap().name().unwrap()); eprintln!("{}", repository.path().display()); },
         Err(err) => { eprintln!("err: {}", err); }
     };
-    //todo prevent filesystem traversal with ../../.. or something
-    let metadata = match std::fs::metadata(&format!("{}{}", state.directory, request.path())) {
+
+    let metadata = match std::fs::metadata(path.as_str()) {
         Ok(file) => { file }
-        Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
+        Err(err) => {
+            if err.kind() == std::io::ErrorKind::NotFound {
+                //todo serve from static
+                let file = std::fs::read(path.as_str());
+                return match file {
+                    Ok(file) => { actix_web::HttpResponse::Ok().body(file) }
+                    Err(err) => {
+                        eprintln!("{}", err);
+                        actix_web::HttpResponse::NotFound().finish()
+                    }
+                }
+            }
+            eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish();
+        }
     };
     //todo symlink support?
 
@@ -31,10 +50,10 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                     "NAV" => {
                         body.extend_from_slice(&crate::template::nav::get_nav(request.path()));
                     }
-                    "DIRECTORY" => { body.extend_from_slice(&crate::template::links::get_links(&format!("{}{}", state.directory, request.path())).unwrap()); }
+                    "DIRECTORY" => { body.extend_from_slice(&crate::template::links::get_links(path.as_str()).unwrap()); }
                     "PATH" => { body.extend_from_slice(request.path().as_bytes()); }
                     "FILE" => {
-                        let string = match std::fs::read_to_string(format!("{}{}", state.directory, request.path())) {
+                        let string = match std::fs::read_to_string(path.as_str()) {
                             Ok(f) => { f }
                             Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
                         };
@@ -44,7 +63,7 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                             let mut output_string = String::new();
                             pulldown_cmark::html::push_html(&mut output_string, parser);
                             body.extend(output_string.as_bytes());
-                        } else {
+                        } else {//todo read with bufread?
                             body.extend("<pre>".as_bytes());
                             let string = string
                                 .replace("&", "&amp")//todo each replace is very slow

@@ -1,4 +1,4 @@
-pub fn get_links(path: &String) -> std::io::Result<Vec<u8>> {
+pub fn get_links(path: &str) -> std::io::Result<Vec<u8>> {
     let mut links: Vec<u8> = Vec::new();
     let paths = std::fs::read_dir(path)?;
     for path in paths {

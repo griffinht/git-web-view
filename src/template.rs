@@ -9,35 +9,37 @@ pub struct Parsed {
     pub(crate) tag: Option<String>,
 }
 
-pub fn parse_directory_default() -> std::collections::HashMap<String, Vec<Parsed>> {
+pub fn parse_directory(path: Option<String>) -> std::collections::HashMap<String, Vec<Parsed>> {
     let mut map: std::collections::HashMap<String, Vec<Parsed>> = std::collections::HashMap::new();
-    fn doo(map: &mut std::collections::HashMap<String, Vec<Parsed>>, name: String, bytes: &[u8]) {
-        match parse(std::io::BufReader::new(bytes)) {
-            Ok(parse) => { map.insert(name, parse); }
-            Err(err) => { eprintln!("error parsing: {}", err); }
-        };
-    }
-    doo(&mut map, "directory.html".parse().unwrap(), include_bytes!("../default-template/directory.html"));
-    doo(&mut map, "file.html".parse().unwrap(), include_bytes!("../default-template/file.html"));
-    return map;
-}
 
-pub fn parse_directory(path: &str) -> std::collections::HashMap<String, Vec<Parsed>> {
-    let mut map: std::collections::HashMap<String, Vec<Parsed>> = std::collections::HashMap::new();
-    for file in match std::fs::read_dir(path) {
-        Ok(file) => file,
-        Err(err) => { eprintln!("err reading directory {}: {}", path, err); return map; }
-    } {
-        let file = match file {
-            Ok(file) => file,
-            Err(err) => { eprintln!("err reading {}: {}", path, err); continue; }
-        };
-        //todo symlinks and dirs
-        map.insert(file.file_name().into_string().unwrap(), match parse_file(file.path()) {
-            Ok(parsed) => { parsed }
-            Err(err) => { eprintln!("error parsing {}: {}", file.path().as_os_str().to_str().unwrap(), err); continue; }
-        });
+    match path {
+        None => {}
+        Some(path) => {
+            match std::fs::read_dir(&path) {
+                Ok(file) => for file in file {
+                    let file = match file {
+                        Ok(file) => file,
+                        Err(err) => { eprintln!("err reading {}: {}", path, err); continue; }
+                    };
+                    //todo symlinks and dirsc
+                    map.insert(file.file_name().into_string().unwrap(), match parse_file(file.path()) {
+                        Ok(parsed) => { parsed }
+                        Err(err) => { eprintln!("error parsing {}: {}", file.path().as_os_str().to_str().unwrap(), err); continue; }
+                    });
+                },
+                Err(err) => { eprintln!("err reading directory {}: {}", path, err);  }
+            }
+        }
     }
+
+    for file in crate::files::TEMPLATES {
+        if map.contains_key(file.path) { continue }
+        match parse(std::io::BufReader::new(&*file.contents)) {
+            Ok(parsed) => { map.insert(String::from(file.path), parsed); }
+            Err(err) => { eprintln!("error parsing {}: {}", file.path, err); }
+        }
+    }
+
     map
 }
 fn parse_file(path: std::path::PathBuf) -> std::io::Result<Vec<Parsed>> {

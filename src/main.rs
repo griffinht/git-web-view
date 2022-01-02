@@ -1,6 +1,7 @@
 mod options;
 mod template;
 mod response;
+mod files;
 
 #[macro_export]
 macro_rules! default_bind_address {
@@ -9,7 +10,8 @@ macro_rules! default_bind_address {
 
 pub struct State {
     template: std::collections::HashMap<String, Vec<crate::template::Parsed>>,
-    directory: String,
+    directory: Option<String>,
+    state_directory: Option<String>,
 }
 
 #[actix_web::main]
@@ -32,16 +34,9 @@ async fn main() -> std::io::Result<()> {
     let server = actix_web::HttpServer::new(move || {
         actix_web::App::new()
             .data(State {
-                template: if matches.opt_present("template-directory") { //todo only do this once
-                template::parse_directory(matches.opt_get::<String>("template-directory").unwrap().unwrap().as_str())
-            } else {
-                template::parse_directory_default()
-            },
-            directory: if matches.opt_present("directory") {
-                matches.opt_get("directory").unwrap().unwrap()
-            } else {
-                "./".to_string() // default to working directory
-            }}
+                template: template::parse_directory(matches.opt_get("template-directory").unwrap()),
+                directory: matches.opt_get("directory").unwrap(),
+                state_directory: matches.opt_get("static-directory").unwrap()}
             )
             .route("/*", actix_web::web::get().to(response::response))
             .wrap(actix_web::middleware::Compress::new(
