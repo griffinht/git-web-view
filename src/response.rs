@@ -20,7 +20,7 @@ fn serve_static(static_directory: &Option<String>, path: &str, request_path: &st
     // serve from files.rs
     for file in crate::files::STATICS {
         if file.path.eq(request_path) {
-            return actix_web::HttpResponse::Ok().body(file.contents);
+            return actix_web::HttpResponse::Ok().content_type(actix_files::file_extension_to_mime(std::path::Path::new(path).extension().unwrap().to_str().unwrap()).to_string()).body(file.contents);
         }
     }
     return actix_web::HttpResponse::NotFound().finish();
