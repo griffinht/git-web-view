@@ -4,7 +4,7 @@ mod response;
 
 #[macro_export]
 macro_rules! default_bind_address {
-    () => ("127.0.0.1:8080".to_string())
+    () => ("0.0.0.0:80".to_string())
 }
 
 #[actix_web::main]
