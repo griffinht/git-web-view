@@ -74,13 +74,13 @@ pub fn parse<T: BufRead>(mut reader: T) -> std::io::Result<Vec<Parsed>> {
         let read = reader.read_until('}' as u8, &mut tag)?;
         let tag = &tag[0..read - 1];
         parsed.push(Parsed {
-            buf: buf,
+            buf,
             tag: Some(String::from_utf8_lossy(tag).to_string())
         });
         buf = Vec::new();
     }
     parsed.push(Parsed {
-        buf: buf,
+        buf,
         tag: None
     });
     return Ok(parsed);
