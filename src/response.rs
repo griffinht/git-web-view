@@ -12,26 +12,32 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
         Err(error) => { eprintln!("error opening git repository: {}", error); }
     };
 
-    let metadata = match std::fs::metadata(path.as_str()) {
+    let metadata = match std::fs::metadata(&path) {
         Ok(file) => { file }
         Err(err) => {
             if err.kind() != std::io::ErrorKind::NotFound {
                 eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish();
             }
 
-            //serve from static directory
+            // serve from static directory
             match &state.static_directory {
                 None => {}
                 Some(static_directory) => {
-                    match std::fs::read(format!("{}{}", static_directory, path.as_str())) {
+                    match std::fs::read(format!("{}{}", static_directory, &path)) {
                         Ok(file) => {
                             return actix_web::HttpResponse::Ok().body(file)
                         }
-                        Err(_) => {} //ignore and try serving from files.rs
+                        Err(error) => {
+                            if error.kind() != std::io::ErrorKind::NotFound {
+                                eprintln!("error reading {} while serving static directory {}: {}", &path, static_directory, error);
+                                return actix_web::HttpResponse::InternalServerError().finish();
+                            }
+                            // otherwise ignore and try serving from files.rs
+                        }
                     }
                 }
             }
-            //serve from files.rs
+            // serve from files.rs
             for file in crate::files::STATICS {
                 if file.path.eq(request.path()) {
                     return actix_web::HttpResponse::Ok().body(file.contents);
