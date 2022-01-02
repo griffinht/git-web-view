@@ -3,7 +3,7 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
 
     //todo prevent filesystem traversal with ../../.. or something
     let path = match &state.directory {
-        None => { request.path().parse().unwrap() }
+        None => { format!("./{}", request.path()) }
         Some(directory) => { format!("{}{}", directory, request.path()) }
     };
 
