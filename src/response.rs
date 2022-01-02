@@ -31,15 +31,24 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                     "PATH" => { body.extend_from_slice(request.path().as_bytes()); }
                     "FILE" => {
                         let escape_html = true;
+                        let parse_markdown = true;
                         if escape_html {
-                            body.extend(match std::fs::read_to_string(&path) {
+                            let string = match std::fs::read_to_string(&path) {
                                 Ok(f) => { f }
                                 Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
                             }
                                 .replace("&", "&amp")//todo each replace is very slow
                                 .replace("<", "&lt")
-                                .replace(">", "&gt")
-                                .as_bytes());
+                                .replace(">", "&gt");
+                            if parse_markdown && path.ends_with(".md") {
+                                let options = pulldown_cmark::Options::empty();
+                                let parser = pulldown_cmark::Parser::new_ext(&string, options);
+                                let mut output_string = String::new();
+                                pulldown_cmark::html::push_html(&mut output_string, parser);
+                                body.extend(output_string.as_bytes());
+                            } else {
+                                body.extend(string.as_bytes());
+                            }
                         } else {
                             body.extend(&match std::fs::read(&path) {
                                 Ok(f) => { f }
