@@ -1,3 +1,30 @@
+fn serve_static(static_directory: &Option<String>, path: &str, request_path: &str) -> actix_web::HttpResponse {
+    // serve from static directory
+    match static_directory {
+        None => {}
+        Some(static_directory) => {
+            match std::fs::read(format!("{}{}", static_directory, path)) {
+                Ok(file) => {
+                    return actix_web::HttpResponse::Ok().body(file)
+                }
+                Err(error) => {
+                    if error.kind() != std::io::ErrorKind::NotFound {
+                        eprintln!("error reading {} while serving static directory {}: {}", path, static_directory, error);
+                        return actix_web::HttpResponse::InternalServerError().finish();
+                    }
+                    // otherwise ignore and try serving from files.rs
+                }
+            }
+        }
+    }
+    // serve from files.rs
+    for file in crate::files::STATICS {
+        if file.path.eq(request_path) {
+            return actix_web::HttpResponse::Ok().body(file.contents);
+        }
+    }
+    return actix_web::HttpResponse::NotFound().finish();
+}
 pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Data<crate::State>) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
 
@@ -18,32 +45,7 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
             if err.kind() != std::io::ErrorKind::NotFound {
                 eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish();
             }
-
-            // serve from static directory
-            match &state.static_directory {
-                None => {}
-                Some(static_directory) => {
-                    match std::fs::read(format!("{}{}", static_directory, &path)) {
-                        Ok(file) => {
-                            return actix_web::HttpResponse::Ok().body(file)
-                        }
-                        Err(error) => {
-                            if error.kind() != std::io::ErrorKind::NotFound {
-                                eprintln!("error reading {} while serving static directory {}: {}", &path, static_directory, error);
-                                return actix_web::HttpResponse::InternalServerError().finish();
-                            }
-                            // otherwise ignore and try serving from files.rs
-                        }
-                    }
-                }
-            }
-            // serve from files.rs
-            for file in crate::files::STATICS {
-                if file.path.eq(request.path()) {
-                    return actix_web::HttpResponse::Ok().body(file.contents);
-                }
-            }
-            return actix_web::HttpResponse::NotFound().finish();
+            return serve_static(&state.static_directory, &path, request.path());
         }
     };
     //todo symlink support?
