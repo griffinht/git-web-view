@@ -1,7 +1,6 @@
 pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Data<crate::State>) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
     //todo prevent filesystem traversal with ../../.. or something
-    let path = format!("{}{}", state.directory, request.path());
     let metadata = match std::fs::metadata(&path) {
         Ok(file) => { file }
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
@@ -27,17 +26,17 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                     "NAV" => {
                         body.extend_from_slice(&crate::template::nav::get_nav(request.path()));
                     }
-                    "DIRECTORY" => { body.extend_from_slice(&crate::template::links::get_links(&path).unwrap()); }
+                    "DIRECTORY" => { body.extend_from_slice(&crate::template::links::get_links(&format!("{}{}", state.directory, request.path())).unwrap()); }
                     "PATH" => { body.extend_from_slice(request.path().as_bytes()); }
                     "FILE" => {
                         let escape_html = true;
                         let parse_markdown = true;
                         if escape_html {
-                            let string = match std::fs::read_to_string(&path) {
+                            let string = match std::fs::read_to_string(format!("{}{}", state.directory, request.path())) {
                                 Ok(f) => { f }
                                 Err(err) => { eprintln!("error reading file to string: {}", err); return actix_web::HttpResponse::NotFound().finish(); }
                             };
-                            if parse_markdown && path.ends_with(".md") {
+                            if parse_markdown && request.path().ends_with(".md") {
                                 let options = pulldown_cmark::Options::empty();
                                 let parser = pulldown_cmark::Parser::new_ext(&string, options);
                                 let mut output_string = String::new();
@@ -53,7 +52,7 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                                 body.extend("</pre>".as_bytes());
                             }
                         } else {
-                            body.extend(&match std::fs::read(&path) {
+                            body.extend(&match std::fs::read(format!("{}{}", state.directory, request.path())) {
                                 Ok(f) => { f }
                                 Err(err) => {
                                     eprintln!("error reading file: {}", err);
