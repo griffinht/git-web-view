@@ -34,10 +34,10 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/*", actix_web::web::get().to(response::response))
             .wrap(actix_web::middleware::Compress::new(
-                if matches.opt_present("disable-compression") {
-                    actix_web::http::ContentEncoding::Identity
-                } else {
+                if matches.opt_present("enable-compression") {
                     actix_web::http::ContentEncoding::Auto
+                } else {
+                    actix_web::http::ContentEncoding::Identity
                 }))
     });
     if verbose { eprintln!("binding to {}...", address); }

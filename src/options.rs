@@ -6,7 +6,7 @@ pub fn matches(arguments: Vec<String>) -> std::result::Result<std::option::Optio
     options.optflag("v", "version", "print version");
     options.optflag("q", "quiet", "don't print verbose debug information like startup and shutdown messages");
     options.optopt("b", "bind", format!("bind to address (default {})", crate::default_bind_address!()).as_str(), "<address>");
-    options.optflag("c", "disable-compression", "");
+    options.optflag("c", "enable-compression", "enable server to compress with deflate, gzip, or brotli when available (takes more cpu)");
     options.optopt("t", "template-directory", "", "");
 
     if arguments.len() == 0 { return Err(std::io::Error::new(std::io::ErrorKind::Other, "missing program name from argv")); }
