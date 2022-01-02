@@ -6,7 +6,7 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
         Err(err) => { eprintln!("err: {}", err); }
     };
     //todo prevent filesystem traversal with ../../.. or something
-    let metadata = match std::fs::metadata(&path) {
+    let metadata = match std::fs::metadata(&format!("{}{}", state.directory, request.path())) {
         Ok(file) => { file }
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
     };
