@@ -1,5 +1,10 @@
 pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Data<crate::State>) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
+
+    match git2::Repository::open(&state.directory) {
+        Ok(repository) => { eprintln!("{}", repository.head().unwrap().name().unwrap()); eprintln!("{}", repository.path().display()); },
+        Err(err) => { eprintln!("err: {}", err); }
+    };
     //todo prevent filesystem traversal with ../../.. or something
     let metadata = match std::fs::metadata(&path) {
         Ok(file) => { file }
