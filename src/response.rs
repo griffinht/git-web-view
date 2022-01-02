@@ -1,7 +1,7 @@
-pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Data<std::collections::HashMap<String, Vec<crate::template::Parsed>>>) -> impl actix_web::Responder {
+pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Data<crate::State>) -> impl actix_web::Responder {
     eprintln!("{} {} {}", request.peer_addr().unwrap(), request.method(), request.path());
     //todo prevent filesystem traversal with ../../.. or something
-    let path = format!("./{}", request.path());
+    let path = format!("{}{}", state.directory, request.path());
     let metadata = match std::fs::metadata(&path) {
         Ok(file) => { file }
         Err(err) => { eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish(); }
@@ -12,7 +12,7 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
     if metadata.is_dir() { template_name = "directory.html"; }
     else if metadata.is_file() { template_name = "file.html"; }
     else { eprintln!("not a file or a directory"); return actix_web::HttpResponse::NotFound().finish(); }
-    let template = match state.get(template_name) {
+    let template = match state.template.get(template_name) {
         None => { eprintln!("no template for {}", template_name); return actix_web::HttpResponse::InternalServerError().finish(); }
         Some(template) => template
     };

@@ -5,4 +5,4 @@ services:
       - 8080:80
     volumes:
       - ./:/git
-    command: --base-directory /git --directory /git
+    command: --directory /git

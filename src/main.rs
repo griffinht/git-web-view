@@ -7,6 +7,11 @@ macro_rules! default_bind_address {
     () => ("0.0.0.0:80".to_string())
 }
 
+pub struct State {
+    template: std::collections::HashMap<String, Vec<crate::template::Parsed>>,
+    directory: String,
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let matches = match options::matches(std::env::args().collect())? {
@@ -26,11 +31,17 @@ async fn main() -> std::io::Result<()> {
 
     let server = actix_web::HttpServer::new(move || {
         actix_web::App::new()
-            .data(if matches.opt_present("template-directory") { //todo only do this once
+            .data(State {
+                template: if matches.opt_present("template-directory") { //todo only do this once
                 template::parse_directory(matches.opt_get::<String>("template-directory").unwrap().unwrap().as_str())
             } else {
                 template::parse_directory_default()
-            }
+            },
+            directory: if matches.opt_present("directory") {
+                matches.opt_get("directory").unwrap().unwrap()
+            } else {
+                "./".to_string() // default to working directory
+            }}
             )
             .route("/*", actix_web::web::get().to(response::response))
             .wrap(actix_web::middleware::Compress::new(
