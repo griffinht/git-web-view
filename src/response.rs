@@ -43,8 +43,8 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
     //todo symlink support?
 
     let template_name;
-    if metadata.is_dir() { template_name = "directory.html"; }
-    else if metadata.is_file() { template_name = "file.html"; }
+    if metadata.is_dir() { template_name = "/directory.html"; }
+    else if metadata.is_file() { template_name = "/file.html"; }
     else { eprintln!("not a file or a directory"); return actix_web::HttpResponse::NotFound().finish(); }
     let template = match state.template.get(template_name) {
         None => { eprintln!("no template for {}", template_name); return actix_web::HttpResponse::InternalServerError().finish(); }

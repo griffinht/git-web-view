@@ -15,10 +15,10 @@ pub const STATICS: [File; 2] = [
 
 pub const TEMPLATES: [File; 2] = [
     File {
-        path: "directory.html",
+        path: "/directory.html",
         contents: include_bytes!("../default-template/template/directory.html")
     }, File {
-        path:"file.html",
+        path:"/file.html",
         contents: include_bytes!("../default-template/template/file.html")
     }
 ];
