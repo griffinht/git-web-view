@@ -44,11 +44,13 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                                 pulldown_cmark::html::push_html(&mut output_string, parser);
                                 body.extend(output_string.as_bytes());
                             } else {
+                                body.extend("<pre>".as_bytes());
                                 let string = string
                                     .replace("&", "&amp")//todo each replace is very slow
                                     .replace("<", "&lt")
                                     .replace(">", "&gt");
                                 body.extend(string.as_bytes());
+                                body.extend("</pre>".as_bytes());
                             }
                         } else {
                             body.extend(&match std::fs::read(&path) {
