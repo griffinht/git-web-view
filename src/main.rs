@@ -11,7 +11,7 @@ macro_rules! default_bind_address {
 pub struct State {
     template: std::collections::HashMap<String, Vec<crate::template::Parsed>>,
     directory: Option<String>,
-    state_directory: Option<String>,
+    static_directory: Option<String>,
 }
 
 #[actix_web::main]
@@ -36,7 +36,7 @@ async fn main() -> std::io::Result<()> {
             .data(State {
                 template: template::parse_directory(matches.opt_get("template-directory").unwrap()),
                 directory: matches.opt_get("directory").unwrap(),
-                state_directory: matches.opt_get("static-directory").unwrap()}
+                static_directory: matches.opt_get("static-directory").unwrap()}
             )
             .route("/*", actix_web::web::get().to(response::response))
             .wrap(actix_web::middleware::Compress::new(

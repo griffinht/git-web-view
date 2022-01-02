@@ -5,10 +5,10 @@ pub struct File {
 
 pub const STATICS: [File; 2] = [
     File {
-        path: "favicon.ico",
+        path: "/favicon.ico",
         contents: include_bytes!("../default-template/static/favicon.ico")
     }, File {
-        path: "style.css",
+        path: "/style.css",
         contents: include_bytes!("../default-template/static/style.css")
     }
 ];

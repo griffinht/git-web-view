@@ -9,24 +9,35 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
 
     match git2::Repository::open(&path) {
         Ok(repository) => { eprintln!("{}", repository.head().unwrap().name().unwrap()); eprintln!("{}", repository.path().display()); },
-        Err(err) => { eprintln!("err: {}", err); }
+        Err(error) => { eprintln!("error opening git repository: {}", error); }
     };
 
     let metadata = match std::fs::metadata(path.as_str()) {
         Ok(file) => { file }
         Err(err) => {
-            if err.kind() == std::io::ErrorKind::NotFound {
-                //todo serve from static
-                let file = std::fs::read(path.as_str());
-                return match file {
-                    Ok(file) => { actix_web::HttpResponse::Ok().body(file) }
-                    Err(err) => {
-                        eprintln!("{}", err);
-                        actix_web::HttpResponse::NotFound().finish()
+            if err.kind() != std::io::ErrorKind::NotFound {
+                eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish();
+            }
+
+            //serve from static directory
+            match &state.static_directory {
+                None => {}
+                Some(static_directory) => {
+                    match std::fs::read(format!("{}{}", static_directory, path.as_str())) {
+                        Ok(file) => {
+                            return actix_web::HttpResponse::Ok().body(file)
+                        }
+                        Err(_) => {} //ignore and try serving from files.rs
                     }
                 }
             }
-            eprintln!("{}", err); return actix_web::HttpResponse::NotFound().finish();
+            //serve from files.rs
+            for file in crate::files::STATICS {
+                if file.path.eq(request.path()) {
+                    return actix_web::HttpResponse::Ok().body(file.contents);
+                }
+            }
+            return actix_web::HttpResponse::NotFound().finish();
         }
     };
     //todo symlink support?
