@@ -26,10 +26,8 @@ pub fn get_nav(request_path: &str) -> Vec<u8> {
     nav.reverse();
     let nav = nav;
     let mut real_nav: Vec<u8> = Vec::new();
-    real_nav.extend_from_slice("<nav>".as_bytes());
     for n in nav {
         real_nav.extend_from_slice(n.as_bytes());
     }
-    real_nav.extend_from_slice("</nav>".as_bytes());
     return real_nav;
 }
