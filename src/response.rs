@@ -54,14 +54,23 @@ pub async fn response(request: actix_web::HttpRequest, state: actix_web::web::Da
                             body.extend("</pre>".as_bytes());
                         }
                     }
-                    _ => { eprintln!("unknown tag {}", tag); return actix_web::HttpResponse::InternalServerError().finish(); }
+                    _ => {
+                        if tag.starts_with("LINK") {
+                            fn get_repeated_string(string: &str, i: i32) -> String {
+                                let mut dots: Vec<&str> = Vec::new();
+                                for _ in 0..i {
+                                    dots.push(string);
+                                }
+                                return dots.join("");
+                            }
+                            body.extend_from_slice(format!("{}{}", get_repeated_string("../", request.path().matches("/").count() as i32 - 1), &tag[5..]).as_bytes());
+                        } else {
+                            eprintln!("unknown tag {}", tag); return actix_web::HttpResponse::InternalServerError().finish();
+                        }
+                    }
                 }
             }
         };
     }
     return actix_web::HttpResponse::Ok().content_type("text/html").body(body);
-}
-
-fn serve() {
-
 }
